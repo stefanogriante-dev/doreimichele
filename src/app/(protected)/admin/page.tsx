@@ -1,11 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Settings, Plus, Pencil, Trash2, X, Users } from 'lucide-react'
+import { Settings, Plus, Pencil, Trash2, X, Users, Palette } from 'lucide-react'
 import { toast } from 'sonner'
 import { User, Sezione, UserRole } from '@/types'
 import { useUser } from '@/hooks/useUser'
-import { redirect } from 'next/navigation'
 
 const SEZIONI: { value: Sezione | ''; label: string }[] = [
   { value: '', label: '— nessuna —' },
@@ -32,6 +31,8 @@ export default function AdminPage() {
   const [editing, setEditing] = useState<User | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [brandColor, setBrandColor] = useState('#0284c7')
+  const [savingColor, setSavingColor] = useState(false)
 
   async function load() {
     const res = await fetch('/api/admin/users')
@@ -40,7 +41,30 @@ export default function AdminPage() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  async function loadColor() {
+    const res = await fetch('/api/settings')
+    const data = await res.json()
+    if (data.primary_color) setBrandColor(data.primary_color)
+  }
+
+  async function saveColor() {
+    setSavingColor(true)
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ primary_color: brandColor }),
+      })
+      if (!res.ok) throw new Error()
+      toast.success('Colore aggiornato — ricarica la pagina per vederlo')
+    } catch {
+      toast.error('Errore nel salvataggio')
+    } finally {
+      setSavingColor(false)
+    }
+  }
+
+  useEffect(() => { load(); loadColor() }, [])
 
   if (me && me.ruolo !== 'admin') {
     return <div className="text-center py-12 text-red-500">Accesso negato.</div>
@@ -110,6 +134,31 @@ export default function AdminPage() {
           className="flex items-center gap-1.5 bg-sky-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-sky-700">
           <Plus className="w-4 h-4" /> Nuovo utente
         </button>
+      </div>
+
+      {/* Colore brand */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+        <h2 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+          <Palette className="w-4 h-4" /> Colore layout app
+        </h2>
+        <div className="flex items-center gap-3">
+          <input
+            type="color"
+            value={brandColor}
+            onChange={e => setBrandColor(e.target.value)}
+            className="w-12 h-10 rounded-lg border border-gray-300 cursor-pointer p-0.5"
+          />
+          <span className="text-sm font-mono text-gray-600">{brandColor}</span>
+          <button
+            onClick={saveColor}
+            disabled={savingColor}
+            className="ml-auto px-4 py-2 text-sm font-medium text-white rounded-lg disabled:opacity-60"
+            style={{ backgroundColor: brandColor }}
+          >
+            {savingColor ? 'Salvo...' : 'Salva colore'}
+          </button>
+        </div>
+        <p className="text-xs text-gray-400 mt-2">Il nuovo colore sarà visibile a tutti al prossimo caricamento della pagina.</p>
       </div>
 
       {/* Statistiche */}

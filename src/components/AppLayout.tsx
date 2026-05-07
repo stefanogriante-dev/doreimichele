@@ -21,7 +21,14 @@ const SEZIONE_COLORS: Record<string, string> = {
   basso: 'bg-gray-100 text-gray-700',
 }
 
-export default function AppLayout({ children, user }: { children: React.ReactNode; user: User }) {
+function hexToRgb(hex: string) {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `${r} ${g} ${b}`
+}
+
+export default function AppLayout({ children, user, brandColor }: { children: React.ReactNode; user: User; brandColor: string }) {
   const pathname = usePathname()
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -37,15 +44,18 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
   }
 
   const initials = user.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+  const brand = brandColor || '#0284c7'
+  const brandDark = brand  // hover uses opacity
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ '--brand': brand, '--brand-rgb': hexToRgb(brand) } as React.CSSProperties}>
       {/* Header */}
-      <header className="bg-sky-600 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-30">
+      <header className="text-white px-4 py-3 flex items-center justify-between sticky top-0 z-30"
+        style={{ backgroundColor: brand }}>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setMenuOpen(v => !v)}
-            className="md:hidden p-1 rounded-lg hover:bg-sky-700"
+            className="md:hidden p-1 rounded-lg hover:bg-white/20"
           >
             {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -53,7 +63,7 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
         </div>
         <div className="flex items-center gap-2">
           {user.sezione && (
-            <span className={`hidden sm:inline-flex text-xs px-2 py-0.5 rounded-full font-medium ${SEZIONE_COLORS[user.sezione]} bg-white/20 text-white`}>
+            <span className={`hidden sm:inline-flex text-xs px-2 py-0.5 rounded-full font-medium bg-white/20 text-white`}>
               {user.sezione}
             </span>
           )}
@@ -61,7 +71,7 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
             {initials}
           </div>
           <span className="hidden sm:block text-sm">{user.full_name}</span>
-          <button onClick={handleLogout} className="p-1.5 rounded-lg hover:bg-sky-700" title="Esci">
+          <button onClick={handleLogout} className="p-1.5 rounded-lg hover:bg-white/20" title="Esci">
             <LogOut className="w-4 h-4" />
           </button>
         </div>
@@ -77,10 +87,9 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
                 key={href}
                 href={href}
                 className={`flex items-center gap-3 mx-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  active
-                    ? 'bg-sky-600 text-white'
-                    : 'text-gray-600 hover:bg-sky-50 hover:text-sky-700'
+                  active ? 'text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
                 }`}
+                style={active ? { backgroundColor: brand } : {}}
               >
                 <Icon className="w-4 h-4" />
                 {label}
@@ -101,8 +110,9 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
                     href={href}
                     onClick={() => setMenuOpen(false)}
                     className={`flex items-center gap-3 mx-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                      active ? 'bg-sky-600 text-white' : 'text-gray-600 hover:bg-sky-50 hover:text-sky-700'
+                      active ? 'text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
                     }`}
+                    style={active ? { backgroundColor: brand } : {}}
                   >
                     <Icon className="w-4 h-4" />
                     {label}
@@ -130,9 +140,8 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
               <a
                 key={href}
                 href={href}
-                className={`flex-1 flex flex-col items-center py-2 gap-0.5 text-xs transition-colors ${
-                  active ? 'text-sky-600' : 'text-gray-400'
-                }`}
+                className={`flex-1 flex flex-col items-center py-2 gap-0.5 text-xs transition-colors`}
+                style={{ color: active ? brand : '#9ca3af' }}
               >
                 <Icon className="w-5 h-5" />
                 <span className="leading-none">{label}</span>
