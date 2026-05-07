@@ -9,8 +9,12 @@ const NAV_ITEMS = [
   { href: '/dashboard', label: 'Home', icon: Bell },
   { href: '/calendario', label: 'Calendario', icon: CalendarDays },
   { href: '/celebrazioni', label: 'Celebrazioni', icon: Church },
-  { href: '/spartiti', label: 'Spartiti', icon: Music },
   { href: '/avvisi', label: 'Avvisi', icon: Bell },
+]
+
+const ADMIN_NAV_ITEMS = [
+  { href: '/spartiti', label: 'Spartiti', icon: Music },
+  { href: '/admin', label: 'Gestione', icon: Settings },
 ]
 
 const SEZIONE_COLORS: Record<string, string> = {
@@ -28,10 +32,9 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
 
-  const adminItems = user.ruolo === 'admin'
-    ? [{ href: '/admin', label: 'Gestione', icon: Settings }]
-    : []
-  const allItems = [...NAV_ITEMS, ...adminItems]
+  const allItems = user.ruolo === 'admin'
+    ? [...NAV_ITEMS, ...ADMIN_NAV_ITEMS]
+    : NAV_ITEMS
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' })

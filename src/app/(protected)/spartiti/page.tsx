@@ -77,6 +77,10 @@ export default function SpartitiPage() {
     return matchQ && matchC
   })
 
+  if (!loading && user && user.ruolo !== 'admin') {
+    return <div className="text-center py-12 text-red-500">Accesso negato.</div>
+  }
+
   if (loading) return <div className="text-center py-12 text-gray-400">Caricamento...</div>
 
   return (
