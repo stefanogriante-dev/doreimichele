@@ -30,7 +30,8 @@ const RISPOSTA_ICONS = {
 interface EventCanto {
   id: string
   event_id: string
-  spartito_id: string
+  spartito_id: string | null
+  titolo_libero: string | null
   ordine: number
   note: string | null
   spartito: Spartito | null
@@ -48,7 +49,7 @@ export default function CalendarioPage() {
   const [expandedCanti, setExpandedCanti] = useState<string | null>(null)
   const [canti, setCanti] = useState<Record<string, EventCanto[]>>({})
   const [spartiti, setSpartiti] = useState<Spartito[]>([])
-  const [addCanto, setAddCanto] = useState<Record<string, string>>({})
+  const [addCanto, setAddCanto] = useState<Record<string, { modo: 'libreria' | 'titolo'; spartito_id: string; titolo_libero: string }>>({})
 
   async function load() {
     const res = await fetch('/api/events')
@@ -86,29 +87,40 @@ export default function CalendarioPage() {
     }
   }
 
+  function getAddCanto(eventId: string) {
+    return addCanto[eventId] ?? { modo: 'libreria' as const, spartito_id: '', titolo_libero: '' }
+  }
+
+  function setAddCantoField(eventId: string, field: string, value: string) {
+    setAddCanto(a => ({ ...a, [eventId]: { ...getAddCanto(eventId), [field]: value } }))
+  }
+
   async function addCantoToEvent(eventId: string) {
-    const spartito_id = addCanto[eventId]
-    if (!spartito_id) { toast.error('Seleziona uno spartito'); return }
+    const stato = getAddCanto(eventId)
     const ordine = (canti[eventId]?.length ?? 0) + 1
+    const body = stato.modo === 'libreria'
+      ? { spartito_id: stato.spartito_id, ordine }
+      : { titolo_libero: stato.titolo_libero, ordine }
+
     const res = await fetch(`/api/events/${eventId}/canti`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ spartito_id, ordine }),
+      body: JSON.stringify(body),
     })
-    if (!res.ok) { toast.error('Errore'); return }
+    if (!res.ok) { const d = await res.json(); toast.error(d.error || 'Errore'); return }
     const nuovo = await res.json()
     setCanti(c => ({ ...c, [eventId]: [...(c[eventId] ?? []), nuovo] }))
-    setAddCanto(a => ({ ...a, [eventId]: '' }))
+    setAddCanto(a => ({ ...a, [eventId]: { modo: stato.modo, spartito_id: '', titolo_libero: '' } }))
     toast.success('Canto aggiunto')
   }
 
-  async function removeCanto(eventId: string, spartito_id: string) {
+  async function removeCanto(eventId: string, cantoId: string) {
     await fetch(`/api/events/${eventId}/canti`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ spartito_id }),
+      body: JSON.stringify({ canto_id: cantoId }),
     })
-    setCanti(c => ({ ...c, [eventId]: c[eventId]?.filter(x => x.spartito_id !== spartito_id) ?? [] }))
+    setCanti(c => ({ ...c, [eventId]: c[eventId]?.filter(x => x.id !== cantoId) ?? [] }))
     toast.success('Rimosso')
   }
 
@@ -248,8 +260,11 @@ export default function CalendarioPage() {
                     <div key={c.id} className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-sky-100">
                       <span className="text-xs font-bold text-sky-400 w-5">{i + 1}.</span>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-800">{c.spartito?.titolo}</p>
+                        <p className="text-sm font-medium text-gray-800">
+                          {c.spartito?.titolo ?? c.titolo_libero}
+                        </p>
                         {c.spartito?.compositore && <p className="text-xs text-gray-400">{c.spartito.compositore}</p>}
+                        {!c.spartito && <p className="text-xs text-gray-400 italic">solo titolo</p>}
                       </div>
                       {c.spartito?.file_url && (
                         <a href={c.spartito.file_url} target="_blank" rel="noopener noreferrer"
@@ -258,35 +273,57 @@ export default function CalendarioPage() {
                         </a>
                       )}
                       {user?.ruolo === 'admin' && (
-                        <button onClick={() => removeCanto(event.id, c.spartito_id)} className="p-1.5 text-gray-300 hover:text-red-400">
+                        <button onClick={() => removeCanto(event.id, c.id)} className="p-1.5 text-gray-300 hover:text-red-400">
                           <X className="w-4 h-4" />
                         </button>
                       )}
                     </div>
                   ))}
                 </div>
-                {user?.ruolo === 'admin' && (
-                  <div className="mt-3 flex gap-2">
-                    <select
-                      value={addCanto[event.id] ?? ''}
-                      onChange={e => setAddCanto(a => ({ ...a, [event.id]: e.target.value }))}
-                      className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm bg-white"
-                    >
-                      <option value="">+ Aggiungi canto...</option>
-                      {spartiti
-                        .filter(s => !cantiEvento.some(c => c.spartito_id === s.id))
-                        .map(s => <option key={s.id} value={s.id}>{s.titolo}</option>)}
-                    </select>
-                    {addCanto[event.id] && (
-                      <button
-                        onClick={() => addCantoToEvent(event.id)}
-                        className="bg-sky-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-sky-700"
-                      >
-                        Aggiungi
-                      </button>
-                    )}
-                  </div>
-                )}
+                {user?.ruolo === 'admin' && (() => {
+                  const stato = getAddCanto(event.id)
+                  return (
+                    <div className="mt-3 space-y-2">
+                      {/* Toggle modalità */}
+                      <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit">
+                        {(['libreria', 'titolo'] as const).map(m => (
+                          <button key={m} onClick={() => setAddCantoField(event.id, 'modo', m)}
+                            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${stato.modo === m ? 'bg-white text-sky-700 shadow-sm' : 'text-gray-500'}`}>
+                            {m === 'libreria' ? '📄 Da libreria' : '✏️ Solo titolo'}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        {stato.modo === 'libreria' ? (
+                          <select
+                            value={stato.spartito_id}
+                            onChange={e => setAddCantoField(event.id, 'spartito_id', e.target.value)}
+                            className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm bg-white"
+                          >
+                            <option value="">Seleziona spartito...</option>
+                            {spartiti
+                              .filter(s => !cantiEvento.some(c => c.spartito_id === s.id))
+                              .map(s => <option key={s.id} value={s.id}>{s.titolo}{s.compositore ? ` — ${s.compositore}` : ''}</option>)}
+                          </select>
+                        ) : (
+                          <input
+                            value={stato.titolo_libero}
+                            onChange={e => setAddCantoField(event.id, 'titolo_libero', e.target.value)}
+                            placeholder="Titolo del canto..."
+                            className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                          />
+                        )}
+                        <button
+                          onClick={() => addCantoToEvent(event.id)}
+                          disabled={stato.modo === 'libreria' ? !stato.spartito_id : !stato.titolo_libero.trim()}
+                          className="bg-sky-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-sky-700 disabled:bg-sky-300"
+                        >
+                          Aggiungi
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
             )}
           </div>

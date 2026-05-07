@@ -20,7 +20,14 @@ export default function CelebrazioniPage() {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [form, setForm] = useState({ titolo: '', data: '', tipo: 'liturgica', note: '' })
   const [saving, setSaving] = useState(false)
-  const [addCanto, setAddCanto] = useState<{ celebrazioneId: string; spartito_id: string; note: string } | null>(null)
+  const [addCanto, setAddCanto] = useState<Record<string, { modo: 'libreria' | 'titolo'; spartito_id: string; titolo_libero: string }>>({})
+
+  function getAddCanto(celId: string) {
+    return addCanto[celId] ?? { modo: 'libreria' as const, spartito_id: '', titolo_libero: '' }
+  }
+  function setAddCantoField(celId: string, field: string, value: string) {
+    setAddCanto(a => ({ ...a, [celId]: { ...getAddCanto(celId), [field]: value } }))
+  }
 
   async function load() {
     const [rc, rs] = await Promise.all([fetch('/api/celebrazioni'), fetch('/api/spartiti')])
@@ -64,25 +71,29 @@ export default function CelebrazioniPage() {
     toast.success('Eliminata')
   }
 
-  async function addCantoToCelebrazione() {
-    if (!addCanto?.spartito_id) { toast.error('Seleziona uno spartito'); return }
-    const cel = celebrazioni.find(c => c.id === addCanto.celebrazioneId)
+  async function addCantoToCelebrazione(celId: string) {
+    const stato = getAddCanto(celId)
+    const cel = celebrazioni.find(c => c.id === celId)
     const ordine = (cel?.programma?.length ?? 0) + 1
-    const res = await fetch(`/api/celebrazioni/${addCanto.celebrazioneId}/programma`, {
+    const body = stato.modo === 'libreria'
+      ? { spartito_id: stato.spartito_id, ordine }
+      : { titolo_libero: stato.titolo_libero, ordine }
+    const res = await fetch(`/api/celebrazioni/${celId}/programma`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ spartito_id: addCanto.spartito_id, ordine, note: addCanto.note || null }),
+      body: JSON.stringify(body),
     })
-    if (!res.ok) { toast.error('Errore'); return }
+    if (!res.ok) { const d = await res.json(); toast.error(d.error || 'Errore'); return }
     toast.success('Canto aggiunto')
-    load(); setAddCanto(null)
+    load()
+    setAddCanto(a => ({ ...a, [celId]: { modo: stato.modo, spartito_id: '', titolo_libero: '' } }))
   }
 
-  async function removeCanto(celebrazioneId: string, spartito_id: string) {
+  async function removeCanto(celebrazioneId: string, cantoId: string) {
     await fetch(`/api/celebrazioni/${celebrazioneId}/programma`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ spartito_id }),
+      body: JSON.stringify({ canto_id: cantoId }),
     })
     toast.success('Rimosso')
     load()
@@ -142,8 +153,9 @@ export default function CelebrazioniPage() {
                   <div key={p.id} className="flex items-center gap-2 bg-sky-50 rounded-lg px-3 py-2">
                     <span className="text-xs font-bold text-sky-400 w-5">{i + 1}.</span>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-800">{p.spartito?.titolo}</p>
+                      <p className="text-sm font-medium text-gray-800">{p.spartito?.titolo ?? (p as {titolo_libero?: string}).titolo_libero}</p>
                       {p.spartito?.compositore && <p className="text-xs text-gray-400">{p.spartito.compositore}</p>}
+                      {!(p.spartito) && <p className="text-xs text-gray-400 italic">solo titolo</p>}
                       {p.note && <p className="text-xs text-amber-600 italic">{p.note}</p>}
                     </div>
                     {p.spartito?.file_url && (
@@ -153,31 +165,46 @@ export default function CelebrazioniPage() {
                       </a>
                     )}
                     {user?.ruolo === 'admin' && (
-                      <button onClick={() => removeCanto(cel.id, p.spartito_id)} className="p-1.5 text-gray-300 hover:text-red-400">
+                      <button onClick={() => removeCanto(cel.id, p.id)} className="p-1.5 text-gray-300 hover:text-red-400">
                         <X className="w-4 h-4" />
                       </button>
                     )}
                   </div>
                 ))}
               </div>
-              {user?.ruolo === 'admin' && (
-                <div className="mt-3 flex gap-2">
-                  <select
-                    value={addCanto?.celebrazioneId === cel.id ? addCanto.spartito_id : ''}
-                    onChange={e => setAddCanto({ celebrazioneId: cel.id, spartito_id: e.target.value, note: '' })}
-                    className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
-                  >
-                    <option value="">+ Aggiungi canto...</option>
-                    {spartiti.map(s => <option key={s.id} value={s.id}>{s.titolo}</option>)}
-                  </select>
-                  {addCanto?.celebrazioneId === cel.id && addCanto.spartito_id && (
-                    <button onClick={addCantoToCelebrazione}
-                      className="bg-sky-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-sky-700">
-                      Aggiungi
-                    </button>
-                  )}
-                </div>
-              )}
+              {user?.ruolo === 'admin' && (() => {
+                const stato = getAddCanto(cel.id)
+                return (
+                  <div className="mt-3 space-y-2">
+                    <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit">
+                      {(['libreria', 'titolo'] as const).map(m => (
+                        <button key={m} onClick={() => setAddCantoField(cel.id, 'modo', m)}
+                          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${stato.modo === m ? 'bg-white text-sky-700 shadow-sm' : 'text-gray-500'}`}>
+                          {m === 'libreria' ? '📄 Da libreria' : '✏️ Solo titolo'}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      {stato.modo === 'libreria' ? (
+                        <select value={stato.spartito_id} onChange={e => setAddCantoField(cel.id, 'spartito_id', e.target.value)}
+                          className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm">
+                          <option value="">Seleziona spartito...</option>
+                          {spartiti.map(s => <option key={s.id} value={s.id}>{s.titolo}{s.compositore ? ` — ${s.compositore}` : ''}</option>)}
+                        </select>
+                      ) : (
+                        <input value={stato.titolo_libero} onChange={e => setAddCantoField(cel.id, 'titolo_libero', e.target.value)}
+                          placeholder="Titolo del canto..."
+                          className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
+                      )}
+                      <button onClick={() => addCantoToCelebrazione(cel.id)}
+                        disabled={stato.modo === 'libreria' ? !stato.spartito_id : !stato.titolo_libero.trim()}
+                        className="bg-sky-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-sky-700 disabled:bg-sky-300">
+                        Aggiungi
+                      </button>
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
           )}
         </div>
