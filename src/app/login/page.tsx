@@ -52,12 +52,12 @@ export default function LoginPage() {
               type="text"
               value={username}
               onChange={e => setUsername(e.target.value)}
-              placeholder="es. griantes"
+              placeholder="es. bianchim"
               autoCapitalize="none"
               autoCorrect="off"
               className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
             />
-            <p className="text-xs text-gray-400 mt-1">Cognome + iniziale nome (es. Griante Stefano → griantes)</p>
+            <p className="text-xs text-gray-400 mt-1">Cognome + iniziale nome (es. Bianchi Mario → bianchim)</p>
           </div>
 
           <button
