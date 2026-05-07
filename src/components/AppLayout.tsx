@@ -3,7 +3,6 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { CalendarDays, Music, Church, Bell, Settings, LogOut, Menu, X } from 'lucide-react'
 import { useState } from 'react'
-import { toast } from 'sonner'
 import { User } from '@/types'
 
 const NAV_ITEMS = [
@@ -21,14 +20,10 @@ const SEZIONE_COLORS: Record<string, string> = {
   basso: 'bg-gray-100 text-gray-700',
 }
 
-function hexToRgb(hex: string) {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  return `${r} ${g} ${b}`
-}
+const BRAND = 'var(--color-sky-600)'
+const BRAND_DARK = 'var(--color-sky-700)'
 
-export default function AppLayout({ children, user, brandColor }: { children: React.ReactNode; user: User; brandColor: string }) {
+export default function AppLayout({ children, user }: { children: React.ReactNode; user: User }) {
   const pathname = usePathname()
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -44,14 +39,12 @@ export default function AppLayout({ children, user, brandColor }: { children: Re
   }
 
   const initials = user.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-  const brand = brandColor || '#0284c7'
-  const brandDark = brand  // hover uses opacity
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ '--brand': brand, '--brand-rgb': hexToRgb(brand) } as React.CSSProperties}>
+    <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="text-white px-4 py-3 flex items-center justify-between sticky top-0 z-30"
-        style={{ backgroundColor: brand }}>
+        style={{ backgroundColor: BRAND }}>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setMenuOpen(v => !v)}
@@ -89,7 +82,7 @@ export default function AppLayout({ children, user, brandColor }: { children: Re
                 className={`flex items-center gap-3 mx-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   active ? 'text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
                 }`}
-                style={active ? { backgroundColor: brand } : {}}
+                style={active ? { backgroundColor: BRAND } : {}}
               >
                 <Icon className="w-4 h-4" />
                 {label}
@@ -112,7 +105,7 @@ export default function AppLayout({ children, user, brandColor }: { children: Re
                     className={`flex items-center gap-3 mx-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                       active ? 'text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
                     }`}
-                    style={active ? { backgroundColor: brand } : {}}
+                    style={active ? { backgroundColor: BRAND } : {}}
                   >
                     <Icon className="w-4 h-4" />
                     {label}
@@ -140,8 +133,8 @@ export default function AppLayout({ children, user, brandColor }: { children: Re
               <a
                 key={href}
                 href={href}
-                className={`flex-1 flex flex-col items-center py-2 gap-0.5 text-xs transition-colors`}
-                style={{ color: active ? brand : '#9ca3af' }}
+                className="flex-1 flex flex-col items-center py-2 gap-0.5 text-xs transition-colors"
+                style={{ color: active ? BRAND : '#9ca3af' }}
               >
                 <Icon className="w-5 h-5" />
                 <span className="leading-none">{label}</span>

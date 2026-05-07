@@ -56,10 +56,10 @@ export default function AdminPage() {
         body: JSON.stringify({ primary_color: brandColor }),
       })
       if (!res.ok) throw new Error()
-      toast.success('Colore aggiornato — ricarica la pagina per vederlo')
+      // Apply immediately without full reload via router refresh
+      window.location.reload()
     } catch {
       toast.error('Errore nel salvataggio')
-    } finally {
       setSavingColor(false)
     }
   }
