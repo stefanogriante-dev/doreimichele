@@ -23,37 +23,27 @@ export async function GET() {
   }
 }
 
+// Salva solo i metadati — il file è già stato caricato direttamente su Supabase Storage
 export async function POST(request: NextRequest) {
   try {
     await requireAdmin()
-    const formData = await request.formData()
-    const file = formData.get('file') as File
-    const titolo = formData.get('titolo') as string
-    const compositore = formData.get('compositore') as string
-    const categoria = formData.get('categoria') as string
+    const { titolo, compositore, categoria, file_path } = await request.json()
 
-    if (!file || !titolo) {
-      return NextResponse.json({ error: 'File e titolo obbligatori' }, { status: 400 })
+    if (!titolo || !file_path) {
+      return NextResponse.json({ error: 'Titolo e file_path obbligatori' }, { status: 400 })
     }
 
     const db = getDb()
-    const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
-
-    const { error: uploadError } = await db.storage
-      .from('spartiti')
-      .upload(fileName, file, { contentType: 'application/pdf' })
-    if (uploadError) throw uploadError
-
     const { data, error } = await db
       .from('spartiti')
-      .insert({ titolo, compositore: compositore || null, categoria: categoria || 'altro', file_path: fileName })
+      .insert({ titolo, compositore: compositore || null, categoria: categoria || 'altro', file_path })
       .select()
       .single()
     if (error) throw error
 
     return NextResponse.json({
       ...data,
-      file_url: db.storage.from('spartiti').getPublicUrl(fileName).data.publicUrl,
+      file_url: db.storage.from('spartiti').getPublicUrl(file_path).data.publicUrl,
     }, { status: 201 })
   } catch (e) {
     if (e instanceof AuthError) return NextResponse.json({ error: e.message }, { status: e.status })

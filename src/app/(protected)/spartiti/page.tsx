@@ -31,13 +31,31 @@ export default function SpartitiPage() {
     if (!form.titolo || !file) { toast.error('Titolo e file obbligatori'); return }
     setUploading(true)
     try {
-      const fd = new FormData()
-      fd.append('file', file)
-      fd.append('titolo', form.titolo)
-      fd.append('compositore', form.compositore)
-      fd.append('categoria', form.categoria)
-      const res = await fetch('/api/spartiti', { method: 'POST', body: fd })
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error) }
+      // Step 1: ottieni URL firmato da Supabase
+      const urlRes = await fetch('/api/spartiti/upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: file.name }),
+      })
+      if (!urlRes.ok) { const d = await urlRes.json(); throw new Error(d.error) }
+      const { signedUrl, path } = await urlRes.json()
+
+      // Step 2: carica il PDF direttamente su Supabase (bypassa Vercel)
+      const uploadRes = await fetch(signedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/pdf' },
+        body: file,
+      })
+      if (!uploadRes.ok) throw new Error('Errore nel caricamento del file')
+
+      // Step 3: salva i metadati nel DB
+      const metaRes = await fetch('/api/spartiti', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titolo: form.titolo, compositore: form.compositore, categoria: form.categoria, file_path: path }),
+      })
+      if (!metaRes.ok) { const d = await metaRes.json(); throw new Error(d.error) }
+
       toast.success('Spartito caricato')
       load(); setShowModal(false); setForm({ titolo: '', compositore: '', categoria: 'altro' }); setFile(null)
     } catch (e: unknown) {
