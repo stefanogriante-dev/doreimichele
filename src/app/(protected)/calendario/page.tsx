@@ -50,6 +50,7 @@ export default function CalendarioPage() {
   const [canti, setCanti] = useState<Record<string, EventCanto[]>>({})
   const [spartiti, setSpartiti] = useState<Spartito[]>([])
   const [addCanto, setAddCanto] = useState<Record<string, { modo: 'libreria' | 'titolo'; spartito_id: string; titolo_libero: string }>>({})
+  const [tipoFilter, setTipoFilter] = useState<string>('')
 
   async function load() {
     const res = await fetch('/api/events')
@@ -153,6 +154,15 @@ export default function CalendarioPage() {
 
   if (loading) return <div className="text-center py-12 text-gray-400">Caricamento...</div>
 
+  const TIPI_FILTER = [
+    { value: '', label: 'Tutti' },
+    { value: 'prova', label: 'Prova' },
+    { value: 'celebrazione', label: 'Celebrazione' },
+    { value: 'evento', label: 'Evento' },
+  ]
+
+  const filtered = tipoFilter ? events.filter(e => e.tipo === tipoFilter) : events
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -169,11 +179,28 @@ export default function CalendarioPage() {
         )}
       </div>
 
-      {events.length === 0 && (
-        <p className="text-center text-gray-400 py-12">Nessun evento in calendario.</p>
+      {/* Filtro tipo */}
+      <div className="flex gap-2 flex-wrap">
+        {TIPI_FILTER.map(t => (
+          <button
+            key={t.value}
+            onClick={() => setTipoFilter(t.value)}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+              tipoFilter === t.value
+                ? 'bg-sky-600 text-white border-sky-600'
+                : 'bg-white text-gray-500 border-gray-200 hover:border-sky-300 hover:text-sky-600'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 && (
+        <p className="text-center text-gray-400 py-12">Nessun evento trovato.</p>
       )}
 
-      {events.map(event => {
+      {filtered.map(event => {
         const mia = presenze[event.id]
         const cantiEvento = canti[event.id] ?? []
         const isExpanded = expandedCanti === event.id
