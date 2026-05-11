@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { it } from 'date-fns/locale'
-import { CalendarDays, MapPin, Plus, Pencil, Trash2, Check, X, HelpCircle, Users, Music, FileText, ChevronDown, ChevronUp } from 'lucide-react'
+import { CalendarDays, MapPin, Plus, Pencil, Trash2, Check, X, HelpCircle, Users, Music, FileText, ChevronDown, ChevronUp, Church } from 'lucide-react'
 import { toast } from 'sonner'
 import { CalendarEvent, RispostaPresenza, Presenza, Spartito } from '@/types'
 import EventModal from '@/components/EventModal'
@@ -205,15 +205,24 @@ export default function CalendarioPage() {
         const cantiEvento = canti[event.id] ?? []
         const isExpanded = expandedCanti === event.id
 
+        const isCelebrazione = event.tipo === 'celebrazione'
+
         return (
-          <div key={event.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div key={event.id} className={`rounded-xl shadow-sm overflow-hidden border ${
+            isCelebrazione
+              ? 'bg-purple-50 border-l-4 border-l-purple-400 border-t-purple-100 border-r-purple-100 border-b-purple-100'
+              : 'bg-white border-gray-100'
+          }`}>
             <div className="p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1">
                   <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mb-1.5 ${TIPO_COLORS[event.tipo]}`}>
                     {TIPO_LABEL[event.tipo]}
                   </span>
-                  <h3 className="font-semibold text-gray-800">{event.titolo}</h3>
+                  <h3 className="font-semibold text-gray-800 flex items-center gap-1.5">
+                    {isCelebrazione && <Church className="w-4 h-4 text-purple-500 flex-shrink-0" />}
+                    {event.titolo}
+                  </h3>
                   <p className="text-sm text-sky-700 mt-0.5">
                     {format(parseISO(event.data_inizio), "EEEE d MMMM yyyy 'alle' HH:mm", { locale: it })}
                     {event.data_fine && ` - ${format(parseISO(event.data_fine), 'HH:mm')}`}

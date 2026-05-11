@@ -1,14 +1,13 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { CalendarDays, Music, Church, Bell, Settings, LogOut, Menu, X } from 'lucide-react'
+import { CalendarDays, Music, Bell, Settings, LogOut, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { User } from '@/types'
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Home', icon: Bell },
   { href: '/calendario', label: 'Calendario', icon: CalendarDays },
-  { href: '/celebrazioni', label: 'Celebrazioni', icon: Church },
   { href: '/avvisi', label: 'Avvisi', icon: Bell },
 ]
 
@@ -23,9 +22,6 @@ const SEZIONE_COLORS: Record<string, string> = {
   tenore: 'bg-blue-100 text-blue-700',
   basso: 'bg-gray-100 text-gray-700',
 }
-
-const BRAND = 'var(--color-sky-600)'
-const BRAND_DARK = 'var(--color-sky-700)'
 
 export default function AppLayout({ children, user }: { children: React.ReactNode; user: User }) {
   const pathname = usePathname()
@@ -46,12 +42,11 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="text-white px-4 py-3 flex items-center justify-between sticky top-0 z-30"
-        style={{ backgroundColor: BRAND }}>
+      <header className="bg-sky-600 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-30">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setMenuOpen(v => !v)}
-            className="md:hidden p-1 rounded-lg hover:bg-white/20"
+            className="md:hidden p-1 rounded-lg hover:bg-sky-700"
           >
             {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -59,7 +54,7 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
         </div>
         <div className="flex items-center gap-2">
           {user.sezione && (
-            <span className={`hidden sm:inline-flex text-xs px-2 py-0.5 rounded-full font-medium bg-white/20 text-white`}>
+            <span className="hidden sm:inline-flex text-xs px-2 py-0.5 rounded-full font-medium bg-white/20 text-white">
               {user.sezione}
             </span>
           )}
@@ -67,7 +62,7 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
             {initials}
           </div>
           <span className="hidden sm:block text-sm">{user.full_name}</span>
-          <button onClick={handleLogout} className="p-1.5 rounded-lg hover:bg-white/20" title="Esci">
+          <button onClick={handleLogout} className="p-1.5 rounded-lg hover:bg-sky-700" title="Esci">
             <LogOut className="w-4 h-4" />
           </button>
         </div>
@@ -83,9 +78,8 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
                 key={href}
                 href={href}
                 className={`flex items-center gap-3 mx-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  active ? 'text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+                  active ? 'bg-sky-600 text-white' : 'text-gray-600 hover:bg-sky-50 hover:text-sky-700'
                 }`}
-                style={active ? { backgroundColor: BRAND } : {}}
               >
                 <Icon className="w-4 h-4" />
                 {label}
@@ -106,9 +100,8 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
                     href={href}
                     onClick={() => setMenuOpen(false)}
                     className={`flex items-center gap-3 mx-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                      active ? 'text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+                      active ? 'bg-sky-600 text-white' : 'text-gray-600 hover:bg-sky-50 hover:text-sky-700'
                     }`}
-                    style={active ? { backgroundColor: BRAND } : {}}
                   >
                     <Icon className="w-4 h-4" />
                     {label}
@@ -136,8 +129,9 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
               <a
                 key={href}
                 href={href}
-                className="flex-1 flex flex-col items-center py-2 gap-0.5 text-xs transition-colors"
-                style={{ color: active ? BRAND : '#9ca3af' }}
+                className={`flex-1 flex flex-col items-center py-2 gap-0.5 text-xs transition-colors ${
+                  active ? 'text-sky-600' : 'text-gray-400'
+                }`}
               >
                 <Icon className="w-5 h-5" />
                 <span className="leading-none">{label}</span>
