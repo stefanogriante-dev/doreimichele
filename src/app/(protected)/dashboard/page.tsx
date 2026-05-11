@@ -65,7 +65,13 @@ export default async function DashboardPage() {
                   </span>
                   <p className="font-semibold text-gray-800">{event.titolo}</p>
                   <p className="text-sm text-sky-600 mt-0.5">
-                    {format(parseISO(event.data_inizio), "EEEE d MMMM 'alle' HH:mm", { locale: it })}
+                    {(() => {
+                      const d = parseISO(event.data_inizio)
+                      const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0
+                      return hasTime
+                        ? format(d, "EEEE d MMMM 'alle' HH:mm", { locale: it })
+                        : format(d, 'EEEE d MMMM', { locale: it })
+                    })()}
                   </p>
                   {event.location && (
                     <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">

@@ -224,8 +224,18 @@ export default function CalendarioPage() {
                     {event.titolo}
                   </h3>
                   <p className="text-sm text-sky-700 mt-0.5">
-                    {format(parseISO(event.data_inizio), "EEEE d MMMM yyyy 'alle' HH:mm", { locale: it })}
-                    {event.data_fine && ` - ${format(parseISO(event.data_fine), 'HH:mm')}`}
+                    {(() => {
+                      const d = parseISO(event.data_inizio)
+                      const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0
+                      return hasTime
+                        ? format(d, "EEEE d MMMM yyyy 'alle' HH:mm", { locale: it })
+                        : format(d, 'EEEE d MMMM yyyy', { locale: it })
+                    })()}
+                    {event.data_fine && (() => {
+                      const df = parseISO(event.data_fine)
+                      const hasTime = df.getHours() !== 0 || df.getMinutes() !== 0
+                      return hasTime ? ` — ${format(df, 'HH:mm')}` : ''
+                    })()}
                   </p>
                   {event.location && (
                     <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">

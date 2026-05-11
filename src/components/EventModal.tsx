@@ -7,6 +7,15 @@ import { X } from 'lucide-react'
 
 const TIPI = ['prova', 'celebrazione', 'evento']
 
+function splitDateTime(iso: string | null | undefined): { date: string; time: string } {
+  if (!iso) return { date: '', time: '' }
+  const d = new Date(iso)
+  const date = iso.slice(0, 10)
+  const h = d.getHours(), m = d.getMinutes()
+  const time = (h === 0 && m === 0) ? '' : `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  return { date, time }
+}
+
 export default function EventModal({
   event,
   onClose,
@@ -16,11 +25,16 @@ export default function EventModal({
   onClose: () => void
   onSaved: () => void
 }) {
+  const inizioSplit = splitDateTime(event?.data_inizio)
+  const fineSplit = splitDateTime(event?.data_fine)
+
   const [form, setForm] = useState({
     tipo: event?.tipo ?? 'prova',
     titolo: event?.titolo ?? '',
-    data_inizio: event?.data_inizio ? event.data_inizio.slice(0, 16) : '',
-    data_fine: event?.data_fine ? event.data_fine.slice(0, 16) : '',
+    data: inizioSplit.date,
+    ora: inizioSplit.time,
+    data_fine: fineSplit.date,
+    ora_fine: fineSplit.time,
     location: event?.location ?? '',
     note: event?.note ?? '',
   })
@@ -31,17 +45,22 @@ export default function EventModal({
   }
 
   async function save() {
-    if (!form.titolo || !form.data_inizio) {
+    if (!form.titolo || !form.data) {
       toast.error('Titolo e data obbligatori')
       return
     }
     setSaving(true)
     try {
+      const data_inizio = new Date(`${form.data}T${form.ora || '00:00'}:00`).toISOString()
+      const data_fine = form.data_fine
+        ? new Date(`${form.data_fine}T${form.ora_fine || '00:00'}:00`).toISOString()
+        : null
+
       const body = {
         tipo: form.tipo,
         titolo: form.titolo,
-        data_inizio: new Date(form.data_inizio).toISOString(),
-        data_fine: form.data_fine ? new Date(form.data_fine).toISOString() : null,
+        data_inizio,
+        data_fine,
         location: form.location || null,
         note: form.note || null,
       }
@@ -88,13 +107,26 @@ export default function EventModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-medium text-gray-700">Data e ora inizio *</label>
-              <input type="datetime-local" value={form.data_inizio} onChange={e => set('data_inizio', e.target.value)}
+              <label className="text-sm font-medium text-gray-700">Data *</label>
+              <input type="date" value={form.data} onChange={e => set('data', e.target.value)}
                 className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">Fine (opz.)</label>
-              <input type="datetime-local" value={form.data_fine} onChange={e => set('data_fine', e.target.value)}
+              <label className="text-sm font-medium text-gray-700">Ora <span className="text-gray-400 font-normal">(opz.)</span></label>
+              <input type="time" value={form.ora} onChange={e => set('ora', e.target.value)}
+                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Data fine <span className="text-gray-400 font-normal">(opz.)</span></label>
+              <input type="date" value={form.data_fine} onChange={e => set('data_fine', e.target.value)}
+                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Ora fine <span className="text-gray-400 font-normal">(opz.)</span></label>
+              <input type="time" value={form.ora_fine} onChange={e => set('ora_fine', e.target.value)}
                 className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
             </div>
           </div>
