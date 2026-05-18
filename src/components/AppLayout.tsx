@@ -47,6 +47,16 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
     }
   }, [pathname])
 
+  // Sincronizza il badge sull'icona dell'app (Badging API)
+  useEffect(() => {
+    if (!('setAppBadge' in navigator)) return
+    if (unreadAvvisi > 0) {
+      navigator.setAppBadge(unreadAvvisi)
+    } else {
+      navigator.clearAppBadge()
+    }
+  }, [unreadAvvisi])
+
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/login')

@@ -8,7 +8,7 @@ webpush.setVapidDetails(
 
 export async function sendPush(
   subscription: webpush.PushSubscription,
-  payload: { title: string; body: string; url?: string }
+  payload: { title: string; body: string; url?: string; badge?: number }
 ) {
   try {
     await webpush.sendNotification(subscription, JSON.stringify(payload))

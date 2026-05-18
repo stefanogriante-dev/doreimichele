@@ -38,17 +38,40 @@ export async function POST(request: NextRequest) {
     // Invia push notifications a tutti gli iscritti
     const { data: subs } = await db
       .from('push_subscriptions')
-      .select('id, endpoint, subscription')
+      .select('id, endpoint, subscription, user_id')
 
     if (subs && subs.length > 0) {
+      // Calcola quanti avvisi non letti avrà ogni utente dopo questo nuovo avviso
+      const { data: reads } = await db
+        .from('avvisi_reads')
+        .select('user_id, last_read_at')
+        .in('user_id', subs.map(s => s.user_id))
+
+      const readMap = Object.fromEntries((reads ?? []).map(r => [r.user_id, r.last_read_at]))
+      const { count: totalAvvisi } = await db
+        .from('avvisi')
+        .select('*', { count: 'exact', head: true })
+
       const deadEndpoints: string[] = []
       await Promise.allSettled(
         subs.map(async (row) => {
           try {
+            const lastRead = readMap[row.user_id]
+            let badge = 1
+            if (lastRead) {
+              const { count } = await db
+                .from('avvisi')
+                .select('*', { count: 'exact', head: true })
+                .gt('created_at', lastRead)
+              badge = (count ?? 0) + 1 // +1 per il nuovo avviso appena creato
+            } else {
+              badge = (totalAvvisi ?? 0) + 1
+            }
             await sendPush(row.subscription as webpush.PushSubscription, {
               title: '📢 Nuovo avviso',
               body: body.titolo,
               url: '/avvisi',
+              badge,
             })
           } catch {
             deadEndpoints.push(row.endpoint)
