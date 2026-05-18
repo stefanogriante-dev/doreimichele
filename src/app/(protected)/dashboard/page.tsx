@@ -1,40 +1,29 @@
 import { getSessionUser } from '@/lib/auth'
-import { getDb } from '@/lib/supabase/admin'
-import { format, parseISO, isAfter } from 'date-fns'
-import { it } from 'date-fns/locale'
-import { CalendarDays, MapPin, Bell } from 'lucide-react'
-import Link from 'next/link'
-
-const TIPO_LABEL: Record<string, string> = {
-  prova: 'Prova',
-  celebrazione: 'Celebrazione',
-  evento: 'Evento',
-}
-
-const TIPO_COLORS: Record<string, string> = {
-  prova: 'bg-sky-100 text-sky-700',
-  celebrazione: 'bg-purple-100 text-purple-700',
-  evento: 'bg-amber-100 text-amber-700',
-}
+import { CalendarDays, Bell, Music } from 'lucide-react'
 
 export default async function DashboardPage() {
   const user = await getSessionUser()
-  const db = getDb()
-  const now = new Date().toISOString()
 
-  const [{ data: events }, { data: avvisi }] = await Promise.all([
-    db
-      .from('events')
-      .select('*')
-      .gte('data_inizio', now)
-      .order('data_inizio', { ascending: true })
-      .limit(3),
-    db
-      .from('avvisi')
-      .select('*, autore:users(full_name)')
-      .order('created_at', { ascending: false })
-      .limit(3),
-  ])
+  const guide = [
+    {
+      icon: CalendarDays,
+      color: 'bg-sky-100 text-sky-600',
+      titolo: 'Calendario',
+      testo: 'Qui trovi tutte le prove, le celebrazioni e gli eventi. Per ogni appuntamento puoi indicare se ci sarai: tocca ✅ Ci sono, ❌ Non ci sono oppure ❓ Forse. All\'interno di ogni evento puoi anche trovare spartiti o testi da scaricare.',
+    },
+    {
+      icon: Bell,
+      color: 'bg-amber-100 text-amber-600',
+      titolo: 'Avvisi',
+      testo: 'Comunicazioni importanti dal direttore e dagli organizzatori. Quando c\'è un avviso nuovo vedrai un pallino rosso sull\'icona. Aprilo per leggerlo e il contatore sparirà.',
+    },
+    {
+      icon: Music,
+      color: 'bg-purple-100 text-purple-600',
+      titolo: 'Notifiche',
+      testo: 'Se hai dato il permesso per le notifiche, riceverai un avviso push ogni volta che viene pubblicata una comunicazione — anche a schermo spento.',
+    },
+  ]
 
   return (
     <div className="space-y-6">
@@ -43,74 +32,22 @@ export default async function DashboardPage() {
         <p className="text-gray-500 text-sm mt-0.5">Corale di San Michele · Cantù</p>
       </div>
 
-      {/* Prossimi eventi */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-700 flex items-center gap-2">
-            <CalendarDays className="w-4 h-4 text-sky-600" />
-            Prossimi appuntamenti
-          </h2>
-          <Link href="/calendario" className="text-sm text-sky-600 hover:underline">Vedi tutti</Link>
-        </div>
+      <div>
+        <p className="text-sm text-gray-500 mb-4">Benvenuto/a in <span className="font-semibold text-gray-700">DoReMiChele</span>, la tua app per restare aggiornato sulle attività della corale.</p>
         <div className="space-y-3">
-          {events?.length === 0 && (
-            <p className="text-sm text-gray-400 bg-white rounded-xl p-4 border border-gray-100">Nessun appuntamento in programma.</p>
-          )}
-          {events?.map(event => (
-            <div key={event.id} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1">
-                  <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mb-1 ${TIPO_COLORS[event.tipo]}`}>
-                    {TIPO_LABEL[event.tipo]}
-                  </span>
-                  <p className="font-semibold text-gray-800">{event.titolo}</p>
-                  <p className="text-sm text-sky-600 mt-0.5">
-                    {(() => {
-                      const d = parseISO(event.data_inizio)
-                      const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0
-                      return hasTime
-                        ? format(d, "EEEE d MMMM 'alle' HH:mm", { locale: it })
-                        : format(d, 'EEEE d MMMM', { locale: it })
-                    })()}
-                  </p>
-                  {event.location && (
-                    <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-                      <MapPin className="w-3 h-3" /> {event.location}
-                    </p>
-                  )}
-                </div>
+          {guide.map(({ icon: Icon, color, titolo, testo }) => (
+            <div key={titolo} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex gap-4">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
+                <Icon className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-semibold text-gray-800 mb-0.5">{titolo}</p>
+                <p className="text-sm text-gray-500 leading-relaxed">{testo}</p>
               </div>
             </div>
           ))}
         </div>
-      </section>
-
-      {/* Ultimi avvisi */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-700 flex items-center gap-2">
-            <Bell className="w-4 h-4 text-sky-600" />
-            Ultimi avvisi
-          </h2>
-          <Link href="/avvisi" className="text-sm text-sky-600 hover:underline">Vedi tutti</Link>
-        </div>
-        <div className="space-y-3">
-          {avvisi?.length === 0 && (
-            <p className="text-sm text-gray-400 bg-white rounded-xl p-4 border border-gray-100">Nessun avviso.</p>
-          )}
-          {avvisi?.map(avviso => (
-            <Link key={avviso.id} href="/avvisi">
-              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:border-sky-200 transition-colors">
-                <p className="font-semibold text-gray-800">{avviso.titolo}</p>
-                <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">{avviso.contenuto}</p>
-                <p className="text-xs text-gray-400 mt-2">
-                  {format(parseISO(avviso.created_at), "d MMM yyyy", { locale: it })} · {(avviso.autore as { full_name: string } | null)?.full_name}
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+      </div>
     </div>
   )
 }
