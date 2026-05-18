@@ -4,8 +4,6 @@ import { requireAuth, requireAdmin, AuthError } from '@/lib/auth'
 import { sendPush } from '@/lib/webpush'
 import type webpush from 'web-push'
 
-// TODO: rimuovere questo filtro per inviare a tutti i coristi
-const PUSH_TEST_USER = 'De Pascalis Federica'
 
 export async function GET() {
   try {
@@ -37,11 +35,10 @@ export async function POST(request: NextRequest) {
       .single()
     if (error) throw error
 
-    // Invia push notifications (solo PUSH_TEST_USER per ora)
+    // Invia push notifications a tutti gli iscritti
     const { data: subs } = await db
       .from('push_subscriptions')
-      .select('id, endpoint, subscription, users!inner(full_name)')
-      .eq('users.full_name', PUSH_TEST_USER)
+      .select('id, endpoint, subscription')
 
     if (subs && subs.length > 0) {
       const deadEndpoints: string[] = []

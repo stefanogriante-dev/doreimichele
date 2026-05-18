@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import { CalendarDays, Music, Bell, Settings, LogOut, Menu, X } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { User } from '@/types'
 
 const NAV_ITEMS = [
@@ -31,6 +31,21 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
   const allItems = user.ruolo === 'admin'
     ? [...NAV_ITEMS, ...ADMIN_NAV_ITEMS]
     : NAV_ITEMS
+
+  const [unreadAvvisi, setUnreadAvvisi] = useState(0)
+
+  useEffect(() => {
+    fetch('/api/avvisi/unread')
+      .then(r => r.json())
+      .then(d => setUnreadAvvisi(d.count ?? 0))
+  }, [])
+
+  useEffect(() => {
+    if (pathname === '/avvisi' || pathname.startsWith('/avvisi/')) {
+      fetch('/api/avvisi/mark-read', { method: 'POST' })
+      setUnreadAvvisi(0)
+    }
+  }, [pathname])
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -73,6 +88,7 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
         <nav className="hidden md:flex flex-col w-56 bg-white border-r border-gray-200 py-4 gap-1">
           {allItems.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(href + '/')
+            const isAvvisi = href === '/avvisi'
             return (
               <a
                 key={href}
@@ -83,6 +99,11 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
               >
                 <Icon className="w-4 h-4" />
                 {label}
+                {isAvvisi && unreadAvvisi > 0 && (
+                  <span className="ml-auto min-w-[20px] h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1">
+                    {unreadAvvisi > 99 ? '99+' : unreadAvvisi}
+                  </span>
+                )}
               </a>
             )
           })}
@@ -94,6 +115,7 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
             <nav className="absolute left-0 top-14 bottom-0 w-56 bg-white py-4 flex flex-col gap-1" onClick={e => e.stopPropagation()}>
               {allItems.map(({ href, label, icon: Icon }) => {
                 const active = pathname === href
+                const isAvvisi = href === '/avvisi'
                 return (
                   <a
                     key={href}
@@ -105,6 +127,11 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
                   >
                     <Icon className="w-4 h-4" />
                     {label}
+                    {isAvvisi && unreadAvvisi > 0 && (
+                      <span className="ml-auto min-w-[20px] h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1">
+                        {unreadAvvisi > 99 ? '99+' : unreadAvvisi}
+                      </span>
+                    )}
                   </a>
                 )
               })}
@@ -125,6 +152,7 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
         <div className="flex">
           {allItems.slice(0, 5).map(({ href, label, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(href + '/')
+            const isAvvisi = href === '/avvisi'
             return (
               <a
                 key={href}
@@ -133,7 +161,14 @@ export default function AppLayout({ children, user }: { children: React.ReactNod
                   active ? 'text-sky-600' : 'text-gray-400'
                 }`}
               >
-                <Icon className="w-5 h-5" />
+                <div className="relative">
+                  <Icon className="w-5 h-5" />
+                  {isAvvisi && unreadAvvisi > 0 && (
+                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
+                      {unreadAvvisi > 9 ? '9+' : unreadAvvisi}
+                    </span>
+                  )}
+                </div>
                 <span className="leading-none">{label}</span>
               </a>
             )
