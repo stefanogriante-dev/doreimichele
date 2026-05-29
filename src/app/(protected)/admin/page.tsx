@@ -269,11 +269,15 @@ function UserRow({ u, onEdit, onDelete, onToggle }: {
         <p className="text-xs text-gray-400">@{u.username} · {u.ruolo}</p>
       </div>
       <div className="flex items-center gap-1.5 flex-wrap justify-end">
-        {ci && (
+        {ci ? (
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ci.color}`}>
             {ci.label}
           </span>
-        )}
+        ) : u.ruolo === 'corista' ? (
+          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-500">
+            C.I. mancante
+          </span>
+        ) : null}
         <button onClick={() => onToggle(u)}
           className={`text-xs px-2 py-1 rounded-full font-medium ${u.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
           {u.is_active ? 'Attivo' : 'Disattivo'}
