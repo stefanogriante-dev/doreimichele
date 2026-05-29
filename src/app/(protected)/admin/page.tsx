@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Settings, Plus, Pencil, Trash2, X, Users } from 'lucide-react'
+import { Settings, Plus, Pencil, Trash2, X, Users, Cake } from 'lucide-react'
 import { toast } from 'sonner'
 import { User, Sezione, UserRole } from '@/types'
 import { useUser } from '@/hooks/useUser'
@@ -23,7 +23,14 @@ const SEZIONE_COLORS: Record<string, string> = {
 
 const emptyForm = {
   username: '', full_name: '', sezione: '' as Sezione | '', ruolo: 'corista' as UserRole,
-  citta_nascita: '', numero_ci: '', scadenza_ci: '',
+  data_nascita: '', citta_nascita: '', numero_ci: '', scadenza_ci: '',
+}
+
+function isBirthdayThisMonth(data_nascita: string | null): boolean {
+  if (!data_nascita) return false
+  const today = new Date()
+  const bday = new Date(data_nascita)
+  return bday.getMonth() === today.getMonth()
 }
 
 function getCIStatus(scadenza: string | null): { label: string; color: string } | null {
@@ -71,6 +78,7 @@ export default function AdminPage() {
       full_name: u.full_name,
       sezione: u.sezione ?? '',
       ruolo: u.ruolo,
+      data_nascita: u.data_nascita ?? '',
       citta_nascita: u.citta_nascita ?? '',
       numero_ci: u.numero_ci ?? '',
       scadenza_ci: u.scadenza_ci ?? '',
@@ -85,6 +93,7 @@ export default function AdminPage() {
       const body = {
         ...form,
         sezione: form.sezione || null,
+        data_nascita: form.data_nascita || null,
         citta_nascita: form.citta_nascita || null,
         numero_ci: form.numero_ci || null,
         scadenza_ci: form.scadenza_ci || null,
@@ -215,11 +224,18 @@ export default function AdminPage() {
               <div className="pt-1 border-t border-gray-100">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Carta d'identità</p>
                 <div className="space-y-3">
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Città di nascita</label>
-                    <input value={form.citta_nascita} onChange={e => setForm(f => ({ ...f, citta_nascita: e.target.value }))}
-                      placeholder="es. Cantù"
-                      className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Data di nascita</label>
+                      <input type="date" value={form.data_nascita} onChange={e => setForm(f => ({ ...f, data_nascita: e.target.value }))}
+                        className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Città di nascita</label>
+                      <input value={form.citta_nascita} onChange={e => setForm(f => ({ ...f, citta_nascita: e.target.value }))}
+                        placeholder="es. Cantù"
+                        className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -229,7 +245,7 @@ export default function AdminPage() {
                         className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-sky-500" />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Scadenza</label>
+                      <label className="text-sm font-medium text-gray-700">Scadenza C.I.</label>
                       <input type="date" value={form.scadenza_ci} onChange={e => setForm(f => ({ ...f, scadenza_ci: e.target.value }))}
                         className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
                     </div>
@@ -265,7 +281,14 @@ function UserRow({ u, onEdit, onDelete, onToggle }: {
         {u.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-gray-800 text-sm">{u.full_name}</p>
+        <p className="font-medium text-gray-800 text-sm flex items-center gap-1">
+          {u.full_name}
+          {isBirthdayThisMonth(u.data_nascita) && (
+            <span title="Compleanno questo mese!">
+              <Cake className="w-3.5 h-3.5 text-pink-400 flex-shrink-0" />
+            </span>
+          )}
+        </p>
         <p className="text-xs text-gray-400">@{u.username} · {u.ruolo}</p>
       </div>
       <div className="flex items-center gap-1.5 flex-wrap justify-end">

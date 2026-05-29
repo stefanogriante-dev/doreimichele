@@ -11,6 +11,7 @@ export interface User {
   ruolo: UserRole
   is_active: boolean
   created_at: string
+  data_nascita: string | null   // ISO date string YYYY-MM-DD
   citta_nascita: string | null
   numero_ci: string | null
   scadenza_ci: string | null   // ISO date string YYYY-MM-DD
