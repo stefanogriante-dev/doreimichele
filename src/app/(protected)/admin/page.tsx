@@ -284,8 +284,9 @@ function UserRow({ u, onEdit, onDelete, onToggle }: {
         <p className="font-medium text-gray-800 text-sm flex items-center gap-1">
           {u.full_name}
           {isBirthdayThisMonth(u.data_nascita) && (
-            <span title="Compleanno questo mese!">
-              <Cake className="w-3.5 h-3.5 text-pink-400 flex-shrink-0" />
+            <span className="inline-flex items-center gap-1 text-pink-400" title="Compleanno questo mese!">
+              <Cake className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="text-xs font-normal">{new Date(u.data_nascita!).toLocaleDateString('it-IT', { day: 'numeric', month: 'long' })}</span>
             </span>
           )}
         </p>
