@@ -21,7 +21,20 @@ const SEZIONE_COLORS: Record<string, string> = {
   basso: 'bg-gray-100 text-gray-700',
 }
 
-const emptyForm = { username: '', full_name: '', sezione: '' as Sezione | '', ruolo: 'corista' as UserRole }
+const emptyForm = {
+  username: '', full_name: '', sezione: '' as Sezione | '', ruolo: 'corista' as UserRole,
+  citta_nascita: '', numero_ci: '', scadenza_ci: '',
+}
+
+function getCIStatus(scadenza: string | null): { label: string; color: string } | null {
+  if (!scadenza) return null
+  const today = new Date()
+  const exp = new Date(scadenza)
+  const diffDays = Math.floor((exp.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  if (diffDays < 0)   return { label: 'C.I. scaduta',    color: 'bg-red-100 text-red-600' }
+  if (diffDays <= 90) return { label: 'C.I. scade presto', color: 'bg-yellow-100 text-yellow-700' }
+  return               { label: 'C.I. valida',       color: 'bg-green-100 text-green-700' }
+}
 
 export default function AdminPage() {
   const { user: me } = useUser()
@@ -53,7 +66,15 @@ export default function AdminPage() {
 
   function openEdit(u: User) {
     setEditing(u)
-    setForm({ username: u.username, full_name: u.full_name, sezione: u.sezione ?? '', ruolo: u.ruolo })
+    setForm({
+      username: u.username,
+      full_name: u.full_name,
+      sezione: u.sezione ?? '',
+      ruolo: u.ruolo,
+      citta_nascita: u.citta_nascita ?? '',
+      numero_ci: u.numero_ci ?? '',
+      scadenza_ci: u.scadenza_ci ?? '',
+    })
     setShowModal(true)
   }
 
@@ -61,7 +82,13 @@ export default function AdminPage() {
     if (!form.username || !form.full_name) { toast.error('Username e nome obbligatori'); return }
     setSaving(true)
     try {
-      const body = { ...form, sezione: form.sezione || null }
+      const body = {
+        ...form,
+        sezione: form.sezione || null,
+        citta_nascita: form.citta_nascita || null,
+        numero_ci: form.numero_ci || null,
+        scadenza_ci: form.scadenza_ci || null,
+      }
       const url = editing ? `/api/admin/users/${editing.id}` : '/api/admin/users'
       const method = editing ? 'PUT' : 'POST'
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -147,7 +174,7 @@ export default function AdminPage() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setShowModal(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-md p-5 space-y-4" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl w-full max-w-md p-5 space-y-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-gray-800">{editing ? 'Modifica utente' : 'Nuovo utente'}</h3>
               <button onClick={() => setShowModal(false)}><X className="w-5 h-5 text-gray-400" /></button>
@@ -183,6 +210,32 @@ export default function AdminPage() {
                   </select>
                 </div>
               </div>
+
+              {/* Dati documento */}
+              <div className="pt-1 border-t border-gray-100">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Carta d'identità</p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Città di nascita</label>
+                    <input value={form.citta_nascita} onChange={e => setForm(f => ({ ...f, citta_nascita: e.target.value }))}
+                      placeholder="es. Cantù"
+                      className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Numero C.I.</label>
+                      <input value={form.numero_ci} onChange={e => setForm(f => ({ ...f, numero_ci: e.target.value.toUpperCase() }))}
+                        placeholder="es. CA12345AB"
+                        className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-sky-500" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Scadenza</label>
+                      <input type="date" value={form.scadenza_ci} onChange={e => setForm(f => ({ ...f, scadenza_ci: e.target.value }))}
+                        className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="flex gap-2 pt-1">
               <button onClick={() => setShowModal(false)} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-600">Annulla</button>
@@ -204,16 +257,23 @@ function UserRow({ u, onEdit, onDelete, onToggle }: {
   onDelete: (id: string) => void
   onToggle: (u: User) => void
 }) {
+  const ci = getCIStatus(u.scadenza_ci)
+
   return (
     <div className={`bg-white rounded-xl border p-3 flex items-center gap-3 ${!u.is_active ? 'opacity-50' : 'border-gray-100'}`}>
-      <div className="w-9 h-9 rounded-full bg-sky-100 flex items-center justify-center text-sky-700 font-bold text-sm">
+      <div className="w-9 h-9 rounded-full bg-sky-100 flex items-center justify-center text-sky-700 font-bold text-sm flex-shrink-0">
         {u.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-medium text-gray-800 text-sm">{u.full_name}</p>
         <p className="text-xs text-gray-400">@{u.username} · {u.ruolo}</p>
       </div>
-      <div className="flex gap-1.5">
+      <div className="flex items-center gap-1.5 flex-wrap justify-end">
+        {ci && (
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ci.color}`}>
+            {ci.label}
+          </span>
+        )}
         <button onClick={() => onToggle(u)}
           className={`text-xs px-2 py-1 rounded-full font-medium ${u.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
           {u.is_active ? 'Attivo' : 'Disattivo'}
