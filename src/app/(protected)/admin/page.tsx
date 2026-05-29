@@ -289,7 +289,12 @@ function UserRow({ u, onEdit, onDelete, onToggle }: {
             </span>
           )}
         </p>
-        <p className="text-xs text-gray-400">@{u.username} · {u.ruolo}</p>
+        <p className="text-xs text-gray-400">
+          @{u.username} · {u.ruolo}
+          {u.ruolo === 'corista' && !u.data_nascita && (
+            <span className="ml-1.5 text-orange-400">· data nasc. mancante</span>
+          )}
+        </p>
       </div>
       <div className="flex items-center gap-1.5 flex-wrap justify-end">
         {ci ? (
