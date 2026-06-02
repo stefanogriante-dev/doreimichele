@@ -2,6 +2,8 @@
   "name": "DoReMiChele",
   "short_name": "DoReMiChele",
   "description": "App della Corale di San Michele in Cantù",
+  "id": "/",
+  "scope": "/",
   "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#f0f9ff",
