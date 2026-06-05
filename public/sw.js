@@ -1,3 +1,19 @@
+// Install: attiva subito senza aspettare che le vecchie schede si chiudano
+self.addEventListener('install', (event) => {
+  self.skipWaiting()
+})
+
+// Activate: prende controllo di tutte le schede aperte immediatamente
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim())
+})
+
+// Fetch: necessario per Chrome Android perché riconosca questa come una vera PWA standalone
+// (senza questo handler l'icona sulla home apre una nuova scheda Chrome invece dell'app)
+self.addEventListener('fetch', (event) => {
+  event.respondWith(fetch(event.request))
+})
+
 self.addEventListener('push', (event) => {
   const data = event.data?.json() ?? {}
   event.waitUntil(
