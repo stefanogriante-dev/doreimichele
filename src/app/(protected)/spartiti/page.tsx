@@ -63,11 +63,12 @@ export default function SpartitiPage() {
     } finally { setUploading(false) }
   }
 
-  async function deleteSprt(id: string) {
-    if (!confirm('Eliminare questo spartito?')) return
-    await fetch(`/api/spartiti/${id}`, { method: 'DELETE' })
+  async function deleteSprt(id: string, titolo: string) {
+    if (!confirm(`Eliminare "${titolo}"?\nLo spartito verrà rimosso anche dagli eventi del calendario.`)) return
+    const res = await fetch(`/api/spartiti/${id}`, { method: 'DELETE' })
+    if (!res.ok) { toast.error('Errore nella cancellazione'); return }
     setSpartiti(s => s.filter(x => x.id !== id))
-    toast.success('Eliminato')
+    toast.success('Spartito eliminato')
   }
 
   const filtered = spartiti.filter(s => {
@@ -135,7 +136,7 @@ export default function SpartitiPage() {
                 </a>
               )}
               {user?.ruolo === 'admin' && (
-                <button onClick={() => deleteSprt(s.id)} className="p-2 text-gray-300 hover:text-red-500 bg-gray-50 rounded-lg">
+                <button onClick={() => deleteSprt(s.id, s.titolo)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Elimina spartito">
                   <Trash2 className="w-4 h-4" />
                 </button>
               )}
